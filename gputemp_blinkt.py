@@ -21,12 +21,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import blinkt
-
+import time
 import socket
 
 # Put your connection details here
+# ip should be a string
+# port should be int
 ip = ""
-port = ""
+port = 1024
 
 # show temp t on led l
 def show_temp(l,t):
@@ -54,7 +56,7 @@ def show_temp(l,t):
         r=255
     print('gpu:{} temp:{} r:{} g:{} b:{}').format(l, t, r, g, b)
     blinkt.set_pixel(l, r, g, b)
-    blinkt.show()
+    #blinkt.show()
 
 blinkt.set_clear_on_exit()
 blinkt.set_brightness(0.1)
@@ -76,6 +78,11 @@ while True:
     gpu = int(l[0])
     temp = int(l[1])
     show_temp(gpu, temp)
+    # KLUDGE: If the script dies suddenly, set_clear_on_exit() doesn't happen.
+    # Instead, cycle LED #7 on and off per-second to indicate life.
+    onoff = (int(time.time()) & 1) * 255
+    blinkt.set_pixel(7, onoff, onoff, onoff)
+    blinkt.show()
 
 print "Flagrant System Error!"
 blinkt.clear()
