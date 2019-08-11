@@ -22,7 +22,6 @@
 
 import blinkt
 
-import time # for sleep()
 import socket
 
 # Put your connection details here
@@ -53,13 +52,13 @@ def show_temp(l,t):
     if t > 80:
         g=int(64-((t-80)*64/10))
         r=255
-    # DEBUG
-    print('show_temp: {} {} {} {}').format(l, r, g, b)
+    print('gpu:{} temp:{} r:{} g:{} b:{}').format(l, t, r, g, b)
     blinkt.set_pixel(l, r, g, b)
     blinkt.show()
 
 blinkt.set_clear_on_exit()
 blinkt.set_brightness(0.1)
+blinkt.clear()
 
 try:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -68,21 +67,15 @@ except socket.error as err:
     print "socket creation failed with error %s" %(err)
 
 s.connect((ip, port))
+# Socket as File gives us buffered readline()
+sf = s.makefile()
 
-blinkt.clear()
+while True:
+    temps_recv = sf.readline()
+    l = temps_recv.split(", ")
+    gpu = int(l[0])
+    temp = int(l[1])
+    show_temp(gpu, temp)
 
-# (6 char / line) * 7 GPUs = 42 bytes
-temps_recv = s.recv(41)
-while s.recv(1) == "\n":
-    time.sleep(1)
-    temps_recv = s.recv(41)
-    for line in temps_recv.split("\n", 6):
-        l = line.split(", ")
-        gpu = int(l[0])
-        temp = int(l[1])
-        # DEBUG
-        print "gpu:{} temp:{} ".format(gpu,temp)
-        show_temp(gpu, temp)
-
-print "Ran out of recv"
+print "Flagrant System Error!"
 blinkt.clear()
