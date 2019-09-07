@@ -120,9 +120,7 @@ def cryptoprice(a,b):
   price_url = "https://api.cryptonator.com/api/ticker/" + a + "-" + b
   price_result = requests.get(price_url)
   price_json = price_result.json()
-  # DEBUG
-  print(price_json)
-  return price_json
+  return price_json["ticker"]["price"]
 
 # Define GPIO to LCD mapping
 LCD_RS = 7
@@ -160,14 +158,9 @@ def main():
   # Initialise display
   lcd_init()
 
-#  lcd_byte(ord('a'), LCD_CHR)
-#  lcd_byte(ord('b'), LCD_CHR)
-#  lcd_byte(ord('c'), LCD_CHR)
-#  lcd_byte(ord('d'), LCD_CHR)
-#  lcd_byte(ord('e'), LCD_CHR)
-#  lcd_byte(ord('f'), LCD_CHR)
-#  lcd_byte(0x18,LCD_CMD)
-#  lcd_toggle_enable()
+  # Get the BTC-USD price here and only once because it is slow to respond
+  # and there may be rate-limiting on the free API
+  btcusd = cryptoprice("BTC", "USD")
 
   while True:
     # Display date and time
@@ -185,6 +178,9 @@ def main():
     lcd_string("IP:",LCD_LINE_1)
     textIP = getIP()
     lcd_string(textIP,LCD_LINE_2)
+    time.sleep(3)
+    lcd_string("BTC-USD", LCD_LINE_1)
+    lcd_string(btcusd, LCD_LINE_2)
     time.sleep(3)
 
 def lcd_init():
@@ -260,6 +256,7 @@ def lcd_string(message,line):
   for i in range(LCD_WIDTH):
     lcd_byte(ord(message[i]),LCD_CHR)
 
+  # TESTING
   # Scroll text (there and back again...)
 #  for i in range(LCD_WIDTH):
 #    lcd_byte(0x1C, LCD_CMD)
