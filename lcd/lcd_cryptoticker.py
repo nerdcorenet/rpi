@@ -206,6 +206,8 @@ def main():
   while True:
     # Get prices
     if time.time() > (timer+API_RATE):
+      # Clear the display
+      lcd_byte(0x01, LCD_CMD)
       # Blinky cursor
       lcd_byte(0x0F, LCD_CMD)
       lcd_string("Getting", LCD_LINE_1)
