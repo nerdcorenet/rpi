@@ -104,32 +104,86 @@ E_DELAY = 0.0005
 SCROLL_DELAY = 0.8
 
 # API rate limiter (seconds)
-API_RATE = 900
+API_RATE = 300
 
-# Check the price for "base-target" and return a float
-# formatted with the appropriate precision for target.
-def cryptoprice(base, target):
-  # National fiat currencies should have precision of 2
-  # Other cryptocurrencies have other specific denominations/precision
-  if target in ["AED","AFN","ALL","AMD","AOA","ARS","AUD","AWG","AZN","BAM","BBD","BDT","BGN","BHD","BIF","BMD","BND","BOB","BRL","BSD","BTN","BWP","BYN","BZD","CAD","CDF","CHF","CLP","CNY","COP","CRC","CUP","CVE","CZK","DJF","DKK","DOP","DZD","EGP","ERN","ETB","EUR","FJD","FKP","GBP","GEL","GHS","GIP","GMD","GNF","GTQ","GYD","HKD","HNL","HRK","HTG","HUF","IDR","ILS","INR","IQD","IRR","ISK","JMD","JOD","JPY","KES","KGS","KHR","KPW","KRW","KWD","KYD","KZT","LAK","LBP","LKR","LRD","LSL","LYD","MAD","MDL","MGA","MKD","MMK","MNT","MOP","MRU","MUR","MVR","MWK","MXN","MYR","MZN","NAD","NGN","NIO","NOK","NPR","NZD","OMR","PAB","PEN","PGK","PHP","PKR","PLN","PYG","QAR","RON","RSD","RUB","RWF","SAR","SBD","SCR","SDG","SEK","SGD","SHP","SLL","SOS","SRD","STN","SYP","SZL","THB","TJS","TMT","TND","TOP","TRY","TTD","TWD","TZS","UAH","UGX","USD","UYU","UZS","VEF","VND","VUV","WST","XAF","XCD","XPF","YER","ZAR","ZMW","ZWL"]:
-    precision = 2
-  elif target in ["XMR"]:
-    precision = 12
-  elif target in ["ETH"]:
-    precision = 18
-  else:
-    precision = 8
+class Currency:
+  def __init__(self,code):
+    self.code = code
+    # Precisions from ISO 4217 and other resources
+    # Dollars from https://en.wikipedia.org/wiki/Dollar
+    # Other cryptocurrencies have other specific denominations/precision
+    if code in ["AUD","BBD","MD","BND","BSD","BZD","CAD","FJD","GYD","HKD","JMD","KYD","LRD","NZD","SBD","SGD","TTD","TVD","TWD","USD","XCD"]:
+      self.precision = 2 # Cent
+      self.symbol = 0x24 # Dollar
+    elif code in ["EUR"]:
+      self.precision = 2
+      self.symbol = 0x06 # Euro
+    elif code in ["EGP","FKP","GIP","GBP","SHP","SSP","SYP"]:
+      self.precision = 2
+      self.symbol = 0x07
+    elif code in ["JPY"]:
+      self.precision = 0
+      self.symbol = 0x5C
+    elif code in ["CNY"]:
+      self.precision = 2
+      self.symbol = 0x5C
+    elif code in ["AED","AFN","ALL","AMD","AOA","ARS","AWG","AZN","BAM","BDT","BGN","BOB","BRL","BTN","BWP","BYN","CDF","CHF","COP","CRC","CUP","CVE","CZK","DKK","DOP","DZD","ERN","ETB","GEL","GHS","GMD","GTQ","HNL","HRK","HTG","HUF","IDR","ILS","INR","IRR","KES","KGS","KHR","KPW","KZT","LAK","LBP","LKR","LSL","MAD","MDL","MGA","MKD","MMK","MNT","MOP","MRU","MUR","MVR","MWK","MXN","MYR","MZN","NAD","NGN","NIO","NOK","NPR","PAB","PEN","PGK","PHP","PKR","PLN","QAR","RON","RSD","RUB","SAR","SCR","SDG","SEK","SLL","SOS","SRD","STN","SZL","THB","TJS","TMT","TOP","TRY","TZS","UAH","UYU","UZS","VEF","WST","YER","ZAR","ZMW","ZWL"]:
+      self.precision = 2
+      self.symbol = 0xFE # null
+    elif code in ["BIF","CLP","DJF","GNF","ISK","KMF","KRW","PYG","RWF","UGX","VND","VUV","XAF","XPF"]:
+      self.precision = 0
+      self.symbol = 0xFE
+    elif code in ["BHD","IQD","JOD","KWD","LYD","OMR","TND"]:
+      self.precision = 3
+      self.symbol = 0xFE
+    elif code in ["BTC","BCH","BSV","BTG"]:
+      self.precision = 8 # Satoshi
+      self.symbol = 0x02 # Bitcoin
+    elif code in ["XMR"]:
+      self.precision = 12 # Picomonero
+      self.symbol = 0x05 # Monero
+    elif code in ["ETH","ETC"]:
+      self.precision = 18 # Wei
+      self.symbol = 0x03 # Ethereum
+    elif code in ["DOGE"]:
+      self.precision = 8
+      self.symbol = 0x04
+    else:
+      self.precision=8
+      self.symbol = 0xFE
 
-  # https://api.cryptonator.com/api/ticker/base-target
-  price_url = "https://api.cryptonator.com/api/ticker/" + base + "-" + target
-  price_result = requests.get(price_url)
-  price_json = price_result.json()
-  price_raw = float(price_json["ticker"]["price"])
-  precision_fmt = "." + str(precision) + "f"
-  price = format(price_raw, precision_fmt)
-  # DEBUG
-  #print("Got " + base + "-" + target + ": " + price)
-  return price
+class Price:
+  def __init__(self,base,target):
+    self.base=Currency(base)
+    self.target=Currency(target)
+    self.precision=self.target.precision
+    self.symbol=self.target.symbol
+    self.value=0.0
+    #self.old=0.0
+    #self.update()
+
+  def __str__(self):
+    self.pair()
+
+  # Return the name of the trade pair "base-target"
+  def pair(self):
+    return self.base.code + "-" + self.target.code
+  # Return a nicely formatted value
+  def show(self):
+    ret = "" if self.symbol==0xFE else chr(self.symbol)
+    if self.precision==0:
+      return ret + format(int(self.value), "d")
+    return ret + format(self.value, "."+str(self.precision)+"f")
+
+  def update(self):
+    self.old = self.value
+    price_url = "https://api.cryptonator.com/api/ticker/" + self.pair()
+    price_result = requests.get(price_url)
+    price_json = price_result.json()
+    self.value = float(price_json["ticker"]["price"])
+    # DEBUG
+    print("Got " + self.pair() + ": " + self.show())
+    return self.value
 
 def prices_show(prices):
   for pair in list(prices.keys()):
@@ -138,16 +192,22 @@ def prices_show(prices):
     time.sleep(3)
 
 def prices_scroll(prices, col = LCD_WIDTH):
-  pairs = list(prices.keys())
-
   # DEBUG
-  #print("COL | ADR1 | CH1 | ADR2 | CH2")
+  print("COL | ADR1 | CH1 | ADR2 | CH2")
 
   # Show prices
-  for pair in pairs:
-    num_chars = (len(pair) if (len(pair) > len(prices[pair])) else len(prices[pair])) + 2
-    pair_str = pair.ljust(num_chars)
-    price_str = prices[pair].ljust(num_chars)
+  for price in prices:
+    if price.old!=0 and price.value > price.old:
+      pair_str = chr(0x00) + price.pair()
+    elif price.old!=0 and price.value < price.old:
+      pair_str = chr(0x01) + price.pair()
+    else:
+      #pair_str = "=" + price.pair()
+      pair_str = price.pair()
+
+    num_chars = (len(pair_str) if (len(pair_str) > len(price.show())) else len(price.show())) + 2
+    pair_str = pair_str.ljust(num_chars)
+    price_str = price.show().ljust(num_chars)
     for c in range(num_chars):
       ch_one = pair_str[c]
       ch_two = price_str[c]
@@ -165,11 +225,11 @@ def prices_scroll(prices, col = LCD_WIDTH):
       lcd_byte(0x0C, LCD_CMD)
       # Mind the buffer
       #col = 0 if col >= 32 else col + 1
-      col = col + 1
+      col+=1
       if col > LCD_BUFFER:
-        col = 0
+        col=0
       # DEBUG
-      #print(" " + format(col, "2d") + " | 0x" + format(0x80 | col, "02X") + " | '" + ch_one + "' | 0x" + format(0xC0 | col, "02X") + " | '" + ch_two + "'")
+      print(" " + format(col, "2d") + " | 0x" + format(0x80 | col, "02X") + " | '" + ch_one + "' | 0x" + format(0xC0 | col, "02X") + " | '" + ch_two + "'")
       # Wait for keypress
       #if ord(readchar.readkey()) == 3:
       #  raise KeyboardInterrupt
@@ -191,17 +251,22 @@ def main():
   # Initialise display
   lcd_init()
 
-  # Put the prices you want to show into this dictionary
-  prices = {
-    "BTC-USD": 0.0,
-    "BTC-EUR": 0.0,
-    "LTC-BTC": 0.0,
-    "ETH-BTC": 0.0,
-#    "DOGE-BTC": 0.0,
-#    "VTC-BTC": 0.0,
-  }
+  # Custom font
+  lcd_mkchars()
+
+  prices = [
+    Price("BTC","USD"),
+    Price("BTC","EUR"),
+#    Price("BTC","GBP"),
+#    Price("BTC","JPY"),
+#    Price("LTC","BTC"),
+    Price("BTC","ETH"),
+#    Price("BTC","XMR"),
+#    Price("USD","DOGE"),
+  ]
 
   timer = 0
+  col = LCD_WIDTH
 
   while True:
     # Get prices
@@ -211,10 +276,10 @@ def main():
       # Blinky cursor
       lcd_byte(0x0F, LCD_CMD)
       lcd_string("Getting", LCD_LINE_1)
-      for pair in list(prices.keys()):
-        lcd_string(pair, LCD_LINE_2)
-        parts = pair.split("-")
-        prices[pair] = cryptoprice(parts[0], parts[1])
+      for price in prices:
+        lcd_string("", LCD_LINE_2) # Clear
+        lcd_string(price.pair(), LCD_LINE_2, False)
+        price.update()
       timer = time.time()
       # Reset the starting column
       col = LCD_WIDTH
@@ -283,19 +348,42 @@ def lcd_toggle_enable():
   GPIO.output(LCD_E, False)
   time.sleep(E_DELAY)
 
-def lcd_string(message,line):
+def lcd_string(message,line,fill=True,fillchar=" "):
   # Cast to string
   message = str(message)
   # Send string to display
-  message = message.ljust(LCD_WIDTH," ")
+  if fill:
+    message = message.ljust(LCD_WIDTH,fillchar)
 
   lcd_byte(line, LCD_CMD)
 
-  for i in range(LCD_WIDTH):
+  for i in range(len(message)):
     lcd_byte(ord(message[i]),LCD_CHR)
 
-if __name__ == '__main__':
+def lcd_mkchars():
+  # Custom chars (CGRAM)
+  # 8 * (5x8)
+  # Dollar (0x24) and Yen (0x5C) are in CGROM
+  lcd_byte(0x40, LCD_CMD)
+  chars = [
+    0b00000,0b00100,0b01110,0b11111,0b00000,0b00000,0b00000,0b00000,# Up
+    0b00000,0b00000,0b00000,0b11111,0b01110,0b00100,0b00000,0b00000,# Down
+    0b01100,0b11110,0b01001,0b01110,0b01001,0b01001,0b11110,0b01100,# BTC
+    0b00000,0b11111,0b00000,0b01110,0b00000,0b11111,0b00000,0b00000,# ETH
+    0b01100,0b01010,0b01001,0b11101,0b01001,0b01010,0b01100,0b00000,# DOGE
+    0b10001,0b11011,0b11111,0b10101,0b10001,0b10001,0b11011,0b00000,# XMR
+    0b00110,0b01001,0b11100,0b01000,0b11100,0b01001,0b00110,0b00000,# EUR
+    0b00110,0b01001,0b01000,0b11100,0b01000,0b01001,0b11111,0b00000,# GBP
+    #0b01010,0b10101,0b01010,0b10101,0b01010,0b10101,0b01010,0b10101,# Dots
+    #0b10101,0b01010,0b10101,0b01010,0b10101,0b01010,0b10101,0b01010,# Inverted Dots
+    #0b11111,0b11011,0b10001,0b00000,0b11111,0b11111,0b11111,0b11111,# Inverted Up Arrow
+    #0b11111,0b11111,0b11111,0b00000,0b10001,0b11011,0b11111,0b11111,# Inverted Down Arrow
+  ]
+  for b in chars:
+    lcd_byte(b, LCD_CHR)
+  lcd_byte(0x01, LCD_CMD)
 
+if __name__ == '__main__':
   try:
     main()
   except KeyboardInterrupt:
