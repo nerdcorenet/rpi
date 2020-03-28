@@ -17,6 +17,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# This code drives a 74HC595 8-bit shift register:
+#
+#         +-----+
+#  BIT_1 -|  U  |- VCC (+5V)
+#  BIT_2 -|     |- BIT_0
+#  BIT_3 -|     |- DS "Data Serial"
+#  BIT_4 -|     |- CE
+#  BIT_5 -|     |- ST "Store"
+#  BIT_6 -|     |- SH "Shift"
+#  BIT_7 -|     |- MR
+#  -/GND -|     |- BIT_7'
+#         +-----+
+
 import RPi.GPIO as GPIO
 import time
 
@@ -29,9 +42,9 @@ PULSE=30 / 1000000000
 
 # You should change these to match your setup
 GPIO.setmode(GPIO.BCM)
-PIN_DATA=17
-PIN_STORE=27
-PIN_OUT=18
+PIN_DATA=17  # DS "Data Serial"
+PIN_STORE=27 # SH "Shift"
+PIN_OUT=18   # ST "Store"
 PAUSE=0.1
 
 GPIO.setup(PIN_DATA, GPIO.OUT)
