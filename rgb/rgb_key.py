@@ -25,13 +25,15 @@ GPIO.output(PIN_B, 0)
 
 #### DEFINES ####
 def getch():
-  import sys, tty, termios
+  import sys, tty, termios, os
   old_settings = termios.tcgetattr(0)
   new_settings = old_settings[:]
   new_settings[3] &= ~termios.ICANON
   try:
     termios.tcsetattr(0, termios.TCSANOW, new_settings)
+    os.system("stty -echo")
     ch = sys.stdin.read(1)
+    os.system("stty echo")
   finally:
     termios.tcsetattr(0, termios.TCSANOW, old_settings)
   return ch
@@ -51,12 +53,38 @@ def main_loop():
     GPIO.output(PIN_R, ron)
     GPIO.output(PIN_G, gon)
     GPIO.output(PIN_B, bon)
+    # DEBUG
+    print_colour(ron, gon, bon)
 
 def invert(x):
-  if (x==0):
-    return 1
-  else:
-    return 0
+  return 0 if x else 1
+
+def print_colour(r, g, b):
+  red = "\033[1;31mRed"
+  green = "\033[1;32mGreen"
+  blue = "\033[1;34mBlue"
+  magenta = "\033[1;35mMagenta"
+  cyan = "\033[1;36mCyan"
+  yellow = "\033[1;33mYellow"
+  white = "\033[1;37mWhite"
+  off = "\033[0m(Off)"
+
+  if (r==0 and g==0 and b==0):
+    print(off)
+  if (r==1 and g==0 and b==0):
+    print(red)
+  if (r==0 and g==1 and b==0):
+    print(green)
+  if (r==0 and g==0 and b==1):
+    print(blue)
+  if (r==0 and g==1 and b==1):
+    print(cyan)
+  if (r==1 and g==0 and b==1):
+    print(magenta)
+  if (r==1 and g==1 and b==0):
+    print(yellow)
+  if (r==1 and g==1 and b==1):
+    print(white)
 
 #### MAIN ####
 if __name__ == '__main__':
