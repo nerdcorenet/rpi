@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 
+#### IMPORTS ####
 import RPi.GPIO as GPIO
 import time
 import math
 
-GPIO.setwarnings(False)
 
-GPIO.setmode(GPIO.BCM)
-
+#### SETUP ####
 PIN_R=14
 PIN_G=15
 PIN_B=18
 PWM_FREQ=2000
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
 
 GPIO.setup(PIN_R, GPIO.OUT)
 GPIO.setup(PIN_G, GPIO.OUT)
@@ -25,6 +27,7 @@ r.start(50)
 b.start(50)
 g.start(50)
 
+#### MAIN ####
 count = 0
 while 1:
     s = math.sin(count)
@@ -36,6 +39,5 @@ while 1:
     r.ChangeDutyCycle(duty)
     g.ChangeDutyCycle((s2 + 1)*50)
     b.ChangeDutyCycle((s3 + 1)*50)
-    #r.ChangeFrequency(duty*10)
     time.sleep(0.25)
     count = count + 1
