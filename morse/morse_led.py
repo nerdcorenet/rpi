@@ -20,6 +20,7 @@
 
 from gpiozero import LED
 import time
+import fileinput
 
 #########
 # NOTES #
@@ -85,7 +86,8 @@ def morsify(msg):
     time.sleep(LETTER)
 
 def main():
-  morsify("sos")
+  for line in fileinput.input():
+    morsify(line)
 
 # Executes the main function
 if __name__ == '__main__':
