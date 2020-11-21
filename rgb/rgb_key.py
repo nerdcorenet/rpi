@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+#
+# A key-controlled utility for turning three LEDs on/off
+#
+# Copyright (c) 2020 Mike Mallett <mike@nerdcore.net>
+#
+# THIS SOFTWARE IS PROVIDED AS-IS WITHOUT ANY WARRANTY NOT EVEN THE
+# WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE. IN
+# NO WAY SHALL MIKE MALLETT BE HELD LIABLE FOR ANY DAMAGAES BE THEY
+# DIRECT, INDIRECT, CONSEQUENTIAL, INCONSEQUENTIAL, INTENTIONAL,
+# UNINTENTIONAL, POSSIBLE, IMPOSSIBLE, INCIDENTAL, DENTAL,
+# PREMEDITATED, MEDITATED, MEDICATED, POST-DOCTRINATED, PASSIVE,
+# ACTIVE, KNOWN, UNKNOWN, FLIPPANT, ACT OF GOD, OR ANY OTHER REASONS
+# WHATSOEVER TO THE MAXIMUM EXTENT ALLOWABLE BY LAW.
 
 #### IMPORTS ####
 import RPi.GPIO as GPIO
@@ -6,14 +19,14 @@ import time
 import math
 
 #### SETUP ####
-GPIO.setwarnings(False)
 
+# Set these to your own configuration
 GPIO.setmode(GPIO.BCM)
-
 PIN_R=14
 PIN_G=15
 PIN_B=18
-PWM_FREQ=2000
+
+GPIO.setwarnings(False)
 
 GPIO.setup(PIN_R, GPIO.OUT)
 GPIO.setup(PIN_G, GPIO.OUT)
@@ -46,15 +59,15 @@ def main_loop():
     c = getch()
     if (c=='r'):
       ron = invert(ron)
+      do_rgb(ron, gon, bon)
     if (c=='b'):
       bon = invert(bon)
+      do_rgb(ron, gon, bon)
     if (c=='g'):
       gon = invert(gon)
-    GPIO.output(PIN_R, ron)
-    GPIO.output(PIN_G, gon)
-    GPIO.output(PIN_B, bon)
-    # DEBUG
-    print_colour(ron, gon, bon)
+      do_rgb(ron, gon, bon)
+    if (c=='q' or c=='x'):
+      leave()
 
 def invert(x):
   return 0 if x else 1
@@ -86,11 +99,27 @@ def print_colour(r, g, b):
   if (r==1 and g==1 and b==1):
     print(white)
 
+# Set RGB LEDs on/off each, and print colour to console
+def do_rgb(r, g, b):
+  GPIO.output(PIN_R, r)
+  GPIO.output(PIN_G, g)
+  GPIO.output(PIN_B, b)
+  # DEBUG
+  print_colour(r, g, b)
+
+# Fancy exit
+def leave(msg=''):
+  if (msg != ''):
+    print(msg)
+  GPIO.cleanup()
+  exit()
+
 #### MAIN ####
 if __name__ == '__main__':
   try:
+    print("Press 'r' for Red, 'g' for Green, 'b' for Blue, 'q' or 'x' to exit.")
     main_loop()
   except KeyboardInterrupt:
     pass
   finally:
-    GPIO.cleanup()
+    leave()
