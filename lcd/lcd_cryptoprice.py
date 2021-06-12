@@ -88,7 +88,9 @@ import requests
 def cryptoprice(a, b, d=8):
   # https://api.cryptonator.com/api/ticker/a-b
   price_url = "https://api.cryptonator.com/api/ticker/" + a + "-" + b
-  price_result = requests.get(price_url)
+  # ClourFlare requires a User-Agent header, otherwise returns 502 error
+  # https://stackoverflow.com/questions/43616566/python-requests-response-520/43616647#43616647
+  price_result = requests.get(price_url, headers={'User-Agent': 'lcd.py'})
   price_json = price_result.json()
   price = float(price_json["ticker"]["price"])
   # Truncate to precision d
